@@ -1,0 +1,154 @@
+<?php
+
+use App\Http\Controllers\DocumentationVideoController;
+use App\Http\Controllers\AnalysisReportController;
+use App\Http\Controllers\IncidentBriefingController;
+use App\Http\Controllers\IncidentExportController;
+use App\Http\Controllers\IncidentPrintController;
+use App\Http\Controllers\MovementPrintController;
+use App\Livewire\Pages\Dashboard;
+use App\Livewire\Pages\Analyses\Index as AnalysesIndex;
+use App\Livewire\Pages\Documents\Index as DocumentsIndex;
+use App\Livewire\Pages\Exports\Index as ExportsIndex;
+use App\Livewire\Pages\Incidents\Index as IncidentsIndex;
+use App\Livewire\Pages\Incidents\Show as IncidentsShow;
+use App\Livewire\Pages\MonitorAssignments\Index as MonitorAssignmentsIndex;
+use App\Livewire\Pages\Organisations\Index as OrganisationsIndex;
+use App\Livewire\Pages\ServiceProviders\Index as ServiceProvidersIndex;
+use App\Livewire\Pages\Superviseurs\Performance;
+use App\Livewire\Pages\Survivants\Index as SurvivantsIndex;
+use App\Livewire\Pages\Users\Index as UsersIndex;
+use App\Livewire\Pages\Users\Profile;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+
+// Route::view('/', 'welcome');
+
+// Route::view('/', 'landing')->name('landing');
+
+Route::get('/', function () {
+    return view('landing');
+})->name('landing');
+
+Route::get('/a-propos', function () {
+    return view('about');
+})->name('about');
+
+Route::get('/a-propos-nous', function () {
+    return view('about_us');
+})->name('about_us');
+
+Route::get('/aide/videos', [DocumentationVideoController::class, 'index'])
+    ->name('documentation.videos');
+Route::get('/aide/videos/{video}/offline', [DocumentationVideoController::class, 'offline'])
+    ->name('documentation.videos.offline');
+Route::get('/aide/videos/{video}', [DocumentationVideoController::class, 'stream'])
+    ->name('documentation.videos.stream');
+
+Route::get('/phpinfo', function () {
+    phpinfo();
+});
+
+/*Route::view('dashboard', 'dashboard')
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');*/
+
+Route::middleware(['auth', 'active'])->group(function () {
+    Route::get('/dashboard', Dashboard::class)->name('dashboard');
+    Route::get('/organisations', OrganisationsIndex::class)->name('organisations.index');
+    Route::get('/documents', DocumentsIndex::class)->name('documents.index');
+    Route::get('/profile', Profile::class)->name('profile');
+    Route::get('/exports', ExportsIndex::class)->name('exports.index');
+    Route::get('/analyses', AnalysesIndex::class)->name('analyses.index');
+    Route::get('/analyses/rapport', [AnalysisReportController::class, 'download'])
+        ->name('analyses.report');
+
+    Route::get('/survivants', SurvivantsIndex::class)->name('survivants.index');
+    Route::get('/incidents', IncidentsIndex::class)->name('incidents.index');
+    Route::get('/incidents/{incident}', IncidentsShow::class)->name('incidents.show');
+    Route::get('/incidents/{incident}/mouvements', \App\Livewire\Pages\Mouvements\Index::class)->name('incidents.mouvements');
+    Route::get('/mouvements', \App\Livewire\Pages\Mouvements\StandaloneIndex::class)->name('mouvements.standalone');
+    Route::get('/mouvements/{mouvement}/print', [MovementPrintController::class, 'show'])->name('mouvements.print');
+
+    Route::get('/victimes/{incidentId?}', \App\Livewire\Pages\Victimes\Index::class)->name('victimes.index');
+    Route::get('/reponses/{incident?}', \App\Livewire\Pages\Reponses\Index::class)->name('reponses.index');
+    Route::get('/exports/victimes', [\App\Http\Controllers\VictimeExportController::class, 'export'])->name('exports.victimes');
+
+    Route::get('/incidents/{incident}/print', [IncidentPrintController::class, 'show'])
+        ->name('incidents.print');
+    Route::get('/incidents/{incident}/briefing', [IncidentBriefingController::class, 'incident'])
+        ->name('incidents.briefing');
+    Route::get('/briefings/province', [IncidentBriefingController::class, 'province'])
+        ->name('briefings.province');
+
+    Route::get('/exports/incidents', [IncidentExportController::class, 'export'])
+        ->name('exports.incidents');
+
+    Route::middleware(['role:superadmin,admin'])->group(function () {
+        Route::get('/service-providers', ServiceProvidersIndex::class)->name('service-providers.index');
+    });
+
+    Route::get('/organisations', OrganisationsIndex::class)->name('organisations.index');
+
+    Route::middleware(['role:superadmin,admin'])->group(function () {
+        Route::get('/supervision/performance', Performance::class)->name('supervision.performance');
+    });
+});
+
+/*Route::middleware(['auth', 'active', 'role:superadmin'])->group(function () {
+    Route::get('/service-providers', ServiceProvidersIndex::class)->name('service-providers.index');
+});*/
+
+// Temporaire pour tester les rôles et permissions
+Route::middleware(['auth', 'active'])->get('/whoami', function () {
+    $u = Auth::user();
+
+    return [
+        'email' => $u->email,
+        'province' => $u->code_province,
+        'roles' => $u->roles->pluck('slug'),
+    ];
+});
+
+Route::middleware(['auth', 'active', 'role:superadmin'])->group(function () {
+    Route::get('/users', UsersIndex::class)->name('users.index');
+    Route::get('/auteurs', \App\Livewire\Pages\Auteurs\Index::class)->name('auteurs.index');
+    Route::get('/assignations-moniteurs', MonitorAssignmentsIndex::class)->name('monitor-assignments.index');
+});
+
+/*
+// Superadmin uniquement
+    Route::middleware(['role:superadmin'])->group(function () {
+        Route::get('/organisations', \App\Livewire\Pages\Organisations\Index::class)
+            ->name('organisations.index');
+    });
+
+    // Admin + Superadmin
+    Route::middleware(['role:superadmin,admin'])->group(function () {
+        Route::get('/users', \App\Livewire\Pages\Users\Index::class)
+            ->name('users.index');
+    });
+
+    // Superviseur + Admin + Superadmin
+    Route::middleware(['role:superadmin,admin,superviseur'])->group(function () {
+        Route::get('/incidents', \App\Livewire\Pages\Incidents\Index::class)
+            ->name('incidents.index');
+    });*/
+
+/*Route::view('profile', 'profile')
+    ->middleware(['auth'])
+    ->name('profile');*/
+
+// Route::middleware(['auth', 'active'])->get('/profile', Profile::class)->name('profile');
+
+Route::post('/logout', function (Request $request) {
+    Auth::logout();
+
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+
+    return redirect()->route('landing');
+})->name('logout');
+
+require __DIR__.'/auth.php';

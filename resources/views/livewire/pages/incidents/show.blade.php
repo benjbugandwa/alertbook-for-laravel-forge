@@ -1,0 +1,395 @@
+<div class="space-y-6 relative">
+    <div wire:loading class="absolute inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-2xl">
+        <div class="flex flex-col items-center gap-2">
+            <svg class="animate-spin h-8 w-8 text-onu" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="text-sm font-medium text-gray-700">Chargement...</span>
+        </div>
+    </div>
+    <div class="flex items-start justify-between gap-4">
+        <div>
+            <div class="text-2xl font-bold">Alerte {{ $incident->code_incident }}</div>
+            <div class="text-sm text-gray-600">
+                Détails de l’alerte
+            </div>
+        </div>
+
+
+        <div class="flex flex-wrap items-center justify-end gap-2">
+            <a href="{{ route('incidents.index') }}" class="text-sm text-gray-700 hover:underline">
+                ← Retour
+            </a>
+
+            <a href="{{ route('incidents.print', $incident->id) }}"
+                class="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-white border border-gray-200 hover:bg-gray-50">
+                🖨️ Imprimer
+            </a>
+
+            <a href="{{ route('incidents.briefing', $incident->id) }}"
+                class="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-onu text-white hover:bg-onu/90">
+                Briefing PDF
+            </a>
+
+            @if (auth()->user()->hasAnyRole(['superadmin', 'admin', 'superviseur']))
+                <x-ui-button variant="secondary"
+                    wire:click="$dispatch('openIncidentEdit', { incidentId: '{{ $incident->id }}' })"
+                    :disabled="$incident->statut_incident !== 'En attente'">
+                    Éditer
+                </x-ui-button>
+
+                <x-ui-button variant="secondary" wire:click="openCoordinatesModal">
+                    GPS
+                </x-ui-button>
+
+                <x-ui-button wire:click="askConfirmValidate"
+                    :disabled="$incident->statut_incident !== 'En attente'">
+                    Valider
+                </x-ui-button>
+
+                @if (!in_array($incident->statut_incident, ['Cloturée', 'Archivé']))
+                    <x-ui-button variant="danger" wire:click="askConfirmArchive">
+                        Archiver
+                    </x-ui-button>
+                @endif
+
+                @if ($incident->statut_incident === 'Validé')
+                    <x-ui-button variant="danger" wire:click="openCloseModal">
+                        Clôturer
+                    </x-ui-button>
+                @endif
+            @endif
+        </div>
+    </div>
+
+    {{-- Cartes Détails de l'incident --}}
+
+    <x-ui-card>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+                <span class="text-gray-500">Statut :</span>
+
+                @php
+                    $status = $incident->statut_incident;
+                    $classes = match ($status) {
+                        'En attente' => 'bg-yellow-100 text-yellow-800 border-yellow-200',
+                        'Validé' => 'bg-green-100 text-green-800 border-green-200',
+                        'Cloturée' => 'bg-gray-100 text-gray-700 border-gray-200',
+                        'Archivé' => 'bg-gray-200 text-gray-600 border-gray-300',
+                        default => 'bg-gray-100 text-gray-700 border-gray-200',
+                    };
+                @endphp
+
+                <span
+                    class="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full border {{ $classes }}">
+                    {{ $status }}
+                </span>
+
+
+            </div>
+            <div><span class="text-gray-500">Sévérité :</span> <span
+                    class="font-medium">{{ $incident->severite }}</span>
+            </div>
+
+            <div><span class="text-gray-500">Date de l'alerte :</span> <span
+                    class="font-medium">{{ optional($incident->date_incident)->format('Y-m-d') }}</span></div>
+            <div><span class="text-gray-500">Événement :</span> <span
+                    class="font-medium">{{ $incident->evenement?->nom_evenement ?? '-' }}</span></div>
+
+            <div><span class="text-gray-500">Province :</span> <span class="font-medium">{{ $incident->province?->nom_province ?? '-' }}</span></div>
+            <div><span class="text-gray-500">Territoire :</span> <span class="font-medium">{{ $incident->territoire?->nom_territoire ?? '-' }}</span></div>
+            <div><span class="text-gray-500">Chefferie :</span> <span class="font-medium">{{ $incident->chefferie?->nom_chefferie ?? '-' }}</span></div>
+            <div><span class="text-gray-500">Groupement :</span> <span class="font-medium">{{ $incident->groupement?->nom_groupement ?? '-' }}</span></div>
+            <div><span class="text-gray-500">Zone de santé :</span> <span class="font-medium">{{ $incident->zoneSante?->nom_zonesante ?? '-' }}</span></div>
+            <div><span class="text-gray-500">Aire de santé :</span> <span class="font-medium">{{ $incident->aireSante?->nom_airesante ?? '-' }}</span></div>
+
+            <div class="md:col-span-2"><span class="text-gray-500">Localité :</span> <span
+                    class="font-medium">{{ $incident->localite ?? '-' }}</span></div>
+            <div><span class="text-gray-500">Longitude :</span> <span class="font-medium">{{ $incident->longitude ?? '-' }}</span></div>
+            <div><span class="text-gray-500">Latitude :</span> <span class="font-medium">{{ $incident->latitude ?? '-' }}</span></div>
+            <div class="md:col-span-2"><span class="text-gray-500">Contact source :</span> <span class="font-medium">{{ $incident->contact_source ?? '-' }}</span></div>
+
+            <div class="md:col-span-2">
+                <div class="text-gray-500 mb-1">Description</div>
+                <div class="whitespace-pre-line">{{ $incident->description_faits ?? '-' }}</div>
+            </div>
+        </div>
+    </x-ui-card>
+
+    {{-- Intelligence opérationnelle --}}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <x-ui-card>
+            <div class="flex items-center justify-between mb-3">
+                <div class="text-sm font-semibold">SLA</div>
+                <span class="text-xs font-semibold {{ $sla['has_overdue'] ? 'text-red-700' : 'text-green-700' }}">
+                    {{ $sla['overdue_count'] }} retard(s)
+                </span>
+            </div>
+            <div class="space-y-2">
+                @foreach($sla['items'] as $item)
+                    <div class="rounded-lg border px-3 py-2 {{ $item['is_overdue'] ? 'border-red-200 bg-red-50' : 'border-gray-100 bg-gray-50' }}">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="text-sm font-medium">{{ $item['label'] }}</div>
+                            @if($item['is_overdue'])
+                                <span class="text-xs font-semibold text-red-700">+{{ $item['hours_late'] }}h</span>
+                            @elseif($item['active'])
+                                <span class="text-xs text-gray-500">Échéance {{ $item['due_at']->format('d/m H:i') }}</span>
+                            @else
+                                <span class="text-xs text-green-700">OK</span>
+                            @endif
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">{{ $item['description'] }}</div>
+                    </div>
+                @endforeach
+            </div>
+        </x-ui-card>
+
+        <x-ui-card>
+            <div class="flex items-center justify-between mb-3">
+                <div class="text-sm font-semibold">Qualité des données</div>
+                <span class="text-xs font-semibold {{ $quality['score'] >= 85 ? 'text-green-700' : ($quality['score'] >= 65 ? 'text-amber-700' : 'text-red-700') }}">
+                    {{ $quality['score'] }}%
+                </span>
+            </div>
+            @if($quality['issues']->isEmpty())
+                <div class="text-sm text-green-700">Aucune donnée critique manquante.</div>
+            @else
+                <div class="space-y-2">
+                    @foreach($quality['issues']->take(6) as $issue)
+                        <div class="flex items-start gap-2 text-sm">
+                            <span class="mt-1 h-2 w-2 rounded-full {{ $issue['severity'] === 'high' ? 'bg-red-500' : ($issue['severity'] === 'medium' ? 'bg-amber-500' : 'bg-gray-400') }}"></span>
+                            <span>{{ $issue['label'] }}</span>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </x-ui-card>
+
+        <x-ui-card>
+            <div class="text-sm font-semibold mb-3">Doublons potentiels</div>
+            @if($duplicates->isEmpty())
+                <div class="text-sm text-gray-500">Aucun incident similaire détecté.</div>
+            @else
+                <div class="space-y-3">
+                    @foreach($duplicates as $row)
+                        <div class="rounded-lg border border-gray-100 p-3">
+                            <div class="flex items-center justify-between gap-3">
+                                <a href="{{ route('incidents.show', $row['incident']->id) }}" class="text-sm font-semibold text-gray-900 hover:underline">
+                                    {{ $row['incident']->code_incident }}
+                                </a>
+                                <span class="text-xs font-bold text-red-700">{{ $row['score'] }}%</span>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-1">{{ implode(', ', $row['reasons']) }}</div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </x-ui-card>
+    </div>
+
+    <x-ui-card>
+        <div class="flex items-center justify-between mb-4">
+            <div class="text-sm font-semibold">Timeline complète</div>
+            <div class="text-xs text-gray-500">{{ $timeline->count() }} événement(s)</div>
+        </div>
+        <div class="space-y-3">
+            @forelse($timeline as $event)
+                <div class="flex gap-3">
+                    <div class="w-32 shrink-0 text-xs text-gray-500 pt-0.5">{{ $event['date']->format('d/m/Y H:i') }}</div>
+                    <div class="relative pl-4 border-l border-gray-200 pb-3">
+                        <div class="absolute -left-1.5 top-1 h-3 w-3 rounded-full bg-onu"></div>
+                        <div class="text-sm font-semibold text-gray-900">{{ $event['label'] }}</div>
+                        <div class="text-sm text-gray-700">{{ $event['title'] }}</div>
+                        @if(!empty($event['meta']))
+                            <div class="mt-1 text-xs text-gray-500">
+                                @foreach($event['meta'] as $key => $value)
+                                    <span class="mr-3">{{ $key }}: {{ $value }}</span>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            @empty
+                <div class="text-sm text-gray-500">Aucun événement disponible.</div>
+            @endforelse
+        </div>
+    </x-ui-card>
+
+    {{-- Cartes violences liés à l'incident --}}
+    <x-ui-card>
+        <div class="flex items-center justify-between mb-3">
+            <div class="text-sm font-semibold">Violences signalées</div>
+            <div class="text-xs text-gray-500">
+                {{ $incident->violences->count() }} type(s)
+            </div>
+        </div>
+
+        @php
+            $grouped = $incident->violences->groupBy(fn($v) => $v->categorie_name ?: 'Autres');
+        @endphp
+
+        @if ($incident->violences->isEmpty())
+            <div class="text-sm text-gray-500">Aucune violence sélectionnée pour cet incident.</div>
+        @else
+            <div class="space-y-4">
+                @foreach ($grouped as $cat => $items)
+                    <div class="border rounded-xl overflow-hidden">
+                        <div class="px-4 py-2 bg-gray-50 text-sm font-semibold">
+                            {{ $cat }}
+                        </div>
+
+                        <div class="p-4 space-y-3">
+                            @foreach ($items as $v)
+                                <div class="flex items-start justify-between gap-4">
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">
+                                            {{ $v->violence_name }}
+                                        </div>
+
+                                        @if (!empty($v->pivot?->description_violence))
+                                            <div class="text-sm text-gray-600 mt-1 whitespace-pre-line">
+                                                {{ $v->pivot->description_violence }}
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                    <div class="flex flex-col items-end gap-1.5">
+                                        <div class="text-xs text-gray-500 whitespace-nowrap">
+                                            @if (!empty($v->pivot?->created_at))
+                                                {{ \Carbon\Carbon::parse($v->pivot->created_at)->format('Y-m-d H:i') }}
+                                            @endif
+                                        </div>
+                                        @if (!auth()->user()->hasRole('moniteur'))
+                                            <a href="{{ route('victimes.index', ['incidentId' => $incident->id, 'add_for_violence' => $v->id]) }}"
+                                                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-onu/20 text-[11px] font-semibold text-onu hover:bg-onu/5 bg-white transition shadow-sm">
+                                                👥 Saisir victimes
+                                            </a>
+                                        @endif
+                                    </div>
+                                </div>
+
+                                @if (!$loop->last)
+                                    <div class="h-px bg-gray-100"></div>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+    </x-ui-card>
+
+    @if (!in_array($incident->statut_incident, ['Cloturée', 'Archivé']) && !auth()->user()->hasRole('moniteur'))
+        <x-ui-button variant="secondary" wire:click="$dispatch('openIncidentViolences', '{{ $incident->id }}')">
+            Modifier les violences
+        </x-ui-button>
+
+        <livewire:components.incident-violences-modal />
+    @endif
+
+    <livewire:components.incident-edit-modal />
+
+    @if ($showCoordinatesModal)
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data
+            x-on:keydown.escape.window="$wire.set('showCoordinatesModal', false)">
+            <div class="absolute inset-0 bg-black/50" wire:click="$set('showCoordinatesModal', false)"></div>
+
+            <div class="relative w-full max-w-md bg-white rounded-2xl shadow-xl border overflow-hidden">
+                <div class="px-5 py-4 border-b flex items-center justify-between">
+                    <div class="font-semibold">Mettre à jour les coordonnées GPS</div>
+                    <button type="button" class="opacity-60 hover:opacity-100"
+                        wire:click="$set('showCoordinatesModal', false)">x</button>
+                </div>
+
+                <div class="p-5 space-y-4">
+                    <div class="space-y-1">
+                        <label class="text-sm font-medium text-gray-700">Longitude</label>
+                        <input type="number" step="0.000001" min="-180" max="180" wire:model.defer="longitude"
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
+                        @error('longitude') <div class="text-sm text-red-600">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-sm font-medium text-gray-700">Latitude</label>
+                        <input type="number" step="0.000001" min="-90" max="90" wire:model.defer="latitude"
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
+                        @error('latitude') <div class="text-sm text-red-600">{{ $message }}</div> @enderror
+                    </div>
+                </div>
+
+                <div class="px-5 py-4 border-t bg-white flex justify-end gap-2">
+                    <x-ui-button variant="secondary" wire:click="$set('showCoordinatesModal', false)">Annuler</x-ui-button>
+                    <x-ui-button wire:click="saveCoordinates" wire:loading.attr="disabled">
+                        <span wire:loading.remove>Enregistrer</span>
+                        <span wire:loading>Traitement...</span>
+                    </x-ui-button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if ($showCloseModal)
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data
+            x-on:keydown.escape.window="$wire.set('showCloseModal', false)">
+            <div class="absolute inset-0 bg-black/50" wire:click="$set('showCloseModal', false)"></div>
+
+            <div class="relative w-full max-w-lg bg-white rounded-2xl shadow-xl border overflow-hidden">
+                <div class="px-5 py-4 border-b flex items-center justify-between">
+                    <div class="font-semibold">Clôturer l'incident</div>
+                    <button type="button" class="opacity-60 hover:opacity-100"
+                        wire:click="$set('showCloseModal', false)">x</button>
+                </div>
+
+                <div class="p-5 space-y-2">
+                    <label class="text-sm font-medium text-gray-700">Commentaire de clôture *</label>
+                    <textarea wire:model.defer="closeComment" rows="4"
+                        class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-onu"></textarea>
+                    @error('closeComment') <div class="text-sm text-red-600">{{ $message }}</div> @enderror
+                    <div class="text-xs text-gray-500">Seuls les incidents validés peuvent être clôturés.</div>
+                </div>
+
+                <div class="px-5 py-4 border-t bg-white flex justify-end gap-2">
+                    <x-ui-button variant="secondary" wire:click="$set('showCloseModal', false)">Annuler</x-ui-button>
+                    <x-ui-button variant="danger" wire:click="closeIncident" wire:loading.attr="disabled">
+                        <span wire:loading.remove>Clôturer</span>
+                        <span wire:loading>Traitement...</span>
+                    </x-ui-button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Modale de confirmation avant validation --}}
+    @if ($showConfirmModal)
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4" x-data
+            x-on:keydown.escape.window="$wire.set('showConfirmModal', false)">
+            <div class="absolute inset-0 bg-black/50" wire:click="$set('showConfirmModal', false)"></div>
+
+            <div class="relative w-full max-w-md bg-white rounded-2xl shadow-xl border overflow-hidden">
+                <div class="px-5 py-4 border-b flex items-center justify-between">
+                    <div class="font-semibold">{{ $confirmTitle }}</div>
+                    <button type="button" class="opacity-60 hover:opacity-100"
+                        wire:click="$set('showConfirmModal', false)">✕</button>
+                </div>
+
+                <div class="p-5 text-sm text-gray-700">
+                    {{ $confirmMessage }}
+                </div>
+
+                <div class="px-5 py-4 border-t bg-white flex justify-end gap-2">
+                    <x-ui-button variant="secondary" wire:click="$set('showConfirmModal', false)">
+                        Annuler
+                    </x-ui-button>
+
+                    <x-ui-button wire:click="runConfirmAction" wire:loading.attr="disabled">
+                        <span wire:loading.remove>Confirmer</span>
+                        <span wire:loading>Traitement…</span>
+                    </x-ui-button>
+                </div>
+            </div>
+        </div>
+    @endif
+    <livewire:components.incident-case-notes :incident-id="$incident->id" />
+    <livewire:components.incident-referencements :incident-id="$incident->id" />
+
+</div>

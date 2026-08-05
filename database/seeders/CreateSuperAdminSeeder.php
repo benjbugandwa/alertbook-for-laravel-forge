@@ -1,0 +1,31 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\Role;
+use App\Models\User;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
+
+class CreateSuperAdminSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $user = User::updateOrCreate(
+            ['email' => 'benjaminbugandwa@gmail.com'],
+            [
+                'name' => 'Benjamin Bugandwa',
+                'password' => Hash::make('Password123!'),
+                'is_active' => true,
+                // 'code_province' => 'PROV01',
+                'code_province' => null,
+
+                // ou une valeur existante dans provinces
+            ]
+        );
+
+        $super = Role::where('slug', 'superadmin')->firstOrFail();
+
+        $user->roles()->syncWithoutDetaching([$super->id]);
+    }
+}
