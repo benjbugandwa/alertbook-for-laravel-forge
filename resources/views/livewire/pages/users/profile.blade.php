@@ -12,7 +12,7 @@
                 class="h-14 w-14 rounded-full bg-gray-200 overflow-hidden grid place-items-center text-sm font-semibold text-gray-700">
                 @if ($u->avatar_url)
                     {{-- avatar_url peut être un chemin local (avatars/...) --}}
-                    <img src="{{ str_starts_with($u->avatar_url, 'http') ? $u->avatar_url : \Illuminate\Support\Facades\Storage::disk('public')->url($u->avatar_url) }}"
+                    <img src="{{ str_starts_with($u->avatar_url, 'http') ? $u->avatar_url : asset('storage/' . $u->avatar_url) }}"
                         class="h-full w-full object-cover" alt="Avatar">
                 @else
                     {{ strtoupper(substr($u->name ?? 'GB', 0, 2)) }}

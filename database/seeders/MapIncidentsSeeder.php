@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Carbon\Carbon;
 
 class MapIncidentsSeeder extends Seeder
 {
@@ -17,6 +17,7 @@ class MapIncidentsSeeder extends Seeder
         $territoires = DB::table('territoires')->get();
         if ($territoires->isEmpty()) {
             $this->command->error('Aucun territoire trouvé dans la base de données. Veuillez d\'abord peupler la table territoires.');
+
             return;
         }
 
@@ -27,10 +28,10 @@ class MapIncidentsSeeder extends Seeder
 
         for ($i = 0; $i < 50; $i++) {
             $territoire = $territoires->random();
-            
+
             DB::table('incidents')->insert([
                 'id' => Str::uuid()->toString(),
-                'code_incident' => 'ALT-MAP-' . strtoupper(Str::random(6)) . '-' . $i,
+                'code_incident' => 'ALT-MAP-'.strtoupper(Str::random(6)).'-'.$i,
                 'date_incident' => Carbon::now()->subDays(rand(1, 30)),
                 'code_province' => $territoire->code_province,
                 'code_territoire' => $territoire->code_territoire,

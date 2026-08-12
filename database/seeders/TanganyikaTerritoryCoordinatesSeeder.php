@@ -33,6 +33,7 @@ class TanganyikaTerritoryCoordinatesSeeder extends Seeder
 
             if ($this->isBlankRow($row)) {
                 $skipped++;
+
                 continue;
             }
 
@@ -42,11 +43,13 @@ class TanganyikaTerritoryCoordinatesSeeder extends Seeder
 
             if ($line === 1 && strtolower($codeTerritoire) === 'code_territoire') {
                 $skipped++;
+
                 continue;
             }
 
             if ($codeTerritoire === '' || ! is_numeric($latitude) || ! is_numeric($longitude)) {
                 $invalidRows[] = $line;
+
                 continue;
             }
 
@@ -55,6 +58,7 @@ class TanganyikaTerritoryCoordinatesSeeder extends Seeder
 
             if ($latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180) {
                 $invalidRows[] = $line;
+
                 continue;
             }
 
@@ -67,6 +71,7 @@ class TanganyikaTerritoryCoordinatesSeeder extends Seeder
 
             if ($affected === 0) {
                 $missingTerritories[] = $codeTerritoire;
+
                 continue;
             }
 

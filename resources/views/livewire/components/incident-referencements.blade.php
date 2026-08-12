@@ -82,7 +82,7 @@
 
                         @if ($r->file_path)
                             <div class="mt-3">
-                                <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($r->file_path) }}" target="_blank"
+                                <a href="{{ asset('storage/' . $r->file_path) }}" target="_blank"
                                     class="text-sm text-gray-900 hover:underline">
                                     📎 Voir la pièce jointe
                                 </a>

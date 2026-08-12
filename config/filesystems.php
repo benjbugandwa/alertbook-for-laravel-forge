@@ -40,45 +40,6 @@ if ($s3EndpointUsesLegacyRailwayStorage) {
     $s3PathStyle = false;
 }
 
-$publicDiskDriver = strtolower((string) $envValue(['PUBLIC_FILESYSTEM_DRIVER', 'ALERTBOOK_PUBLIC_STORAGE_DRIVER'], 'local'));
-$publicDiskUsesS3 = in_array($publicDiskDriver, ['s3', 'spaces', 'do_spaces', 'digitalocean'], true);
-$publicDiskPrefix = trim((string) $envValue(['PUBLIC_FILESYSTEM_PREFIX', 'ALERTBOOK_PUBLIC_STORAGE_PREFIX'], ''), '/');
-
-$s3Disk = [
-    'driver' => 's3',
-    'key' => $envValue(['AWS_ACCESS_KEY_ID', 'ACCESS_KEY_ID']),
-    'secret' => $envValue(['AWS_SECRET_ACCESS_KEY', 'SECRET_ACCESS_KEY']),
-    'region' => $envValue(['AWS_DEFAULT_REGION', 'AWS_REGION', 'REGION'], 'auto'),
-    'bucket' => $envValue(
-        ['AWS_BUCKET', 'BUCKET', 'ALERTBOOK_DOCUMENTATION_BUCKET'],
-        $documentationDiskIsBucket ? $documentationDisk : null
-    ),
-    'url' => $envValue(['AWS_URL']),
-    'endpoint' => $s3Endpoint,
-    'use_path_style_endpoint' => $s3PathStyle,
-    'throw' => false,
-    'report' => false,
-];
-
-$publicDisk = [
-    'driver' => 'local',
-    'root' => storage_path('app/public'),
-    'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
-    'visibility' => 'public',
-    'throw' => false,
-    'report' => false,
-];
-
-if ($publicDiskUsesS3) {
-    $publicDisk = array_merge($s3Disk, [
-        'visibility' => 'public',
-    ]);
-
-    if ($publicDiskPrefix !== '') {
-        $publicDisk['root'] = $publicDiskPrefix;
-    }
-}
-
 return [
 
     /*
@@ -93,6 +54,8 @@ return [
     */
 
     'default' => env('FILESYSTEM_DISK', 'local'),
+
+    'documents' => env('DOCUMENTS_DISK', 'public'),
 
     /*
     |--------------------------------------------------------------------------
@@ -117,9 +80,31 @@ return [
             'report' => false,
         ],
 
-        'public' => $publicDisk,
+        'public' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public'),
+            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
 
-        's3' => $s3Disk,
+        's3' => [
+            'driver' => 's3',
+            'key' => $envValue(['AWS_ACCESS_KEY_ID', 'ACCESS_KEY_ID']),
+            'secret' => $envValue(['AWS_SECRET_ACCESS_KEY', 'SECRET_ACCESS_KEY']),
+            'region' => $envValue(['AWS_DEFAULT_REGION', 'AWS_REGION', 'REGION'], 'auto'),
+            'bucket' => $envValue(
+                ['AWS_BUCKET', 'BUCKET', 'ALERTBOOK_DOCUMENTATION_BUCKET'],
+                $documentationDiskIsBucket ? $documentationDisk : null
+            ),
+            'url' => $envValue(['AWS_URL']),
+            'endpoint' => $s3Endpoint,
+            'use_path_style_endpoint' => $s3PathStyle,
+            'visibility' => 'private',
+            'throw' => false,
+            'report' => false,
+        ],
 
     ],
 

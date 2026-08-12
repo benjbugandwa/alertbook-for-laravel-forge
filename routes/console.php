@@ -30,7 +30,7 @@ Artisan::command('incidents:notify-sla', function () {
             continue;
         }
 
-        Mail::to($user->email)->send(new IncidentSlaOverdueMail(
+        Mail::to($user->email)->queue(new IncidentSlaOverdueMail(
             incidents: $incidents,
             summary: $slaService->summary($province),
             recipientName: $user->name ?? $user->email
@@ -43,6 +43,7 @@ Artisan::command('incidents:notify-sla', function () {
 })->purpose('Notify admins and supervisors about overdue incident SLAs');
 
 Schedule::command('incidents:notify-sla')
-    ->dailyAt((string) config('alertbook.sla.notification_time', '08:00'))
-    ->withoutOverlapping()
-    ->onOneServer();
+    ->dailyAt(config('alertbook.sla_notification_time', '07:00'))
+    ->withoutOverlapping(120)
+    ->onOneServer()
+    ->when(fn (): bool => config('alertbook.sla_notifications_enabled', false));

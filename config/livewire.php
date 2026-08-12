@@ -65,15 +65,15 @@ return [
     */
 
     'temporary_file_upload' => [
-        'disk' => env('LIVEWIRE_UPLOAD_DISK', 'local'),
-        'directory' => env('LIVEWIRE_UPLOAD_DIRECTORY', 'livewire-tmp'),
+        'disk' => 'local',
+        'directory' => 'livewire-tmp',
 
         // Global temporary rules:
         // - images
         // - pdf
         // - word
         // - max 10 MB
-        'rules' => env('LIVEWIRE_UPLOAD_RULES', 'file|mimes:png,jpg,jpeg,pdf,doc,docx|max:10240'),
+        'rules' => 'file|mimes:png,jpg,jpeg,pdf,doc,docx|max:10240',
 
         'middleware' => 'throttle:60,1',
 

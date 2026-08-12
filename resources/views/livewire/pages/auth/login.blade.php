@@ -5,9 +5,12 @@ use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 
-new #[Layout('layouts.guest')] class extends Component {
+new #[Layout('layouts.guest')] class extends Component
+{
     public string $email = '';
+
     public string $password = '';
+
     public bool $remember = false;
 
     public function authenticate(): void
@@ -24,7 +27,7 @@ new #[Layout('layouts.guest')] class extends Component {
             ],
         );
 
-        if (!Auth::attempt(['email' => $this->email, 'password' => $this->password], $this->remember)) {
+        if (! Auth::attempt(['email' => $this->email, 'password' => $this->password], $this->remember)) {
             throw ValidationException::withMessages([
                 'email' => 'Identifiants incorrects.',
             ]);
@@ -39,7 +42,7 @@ new #[Layout('layouts.guest')] class extends Component {
             ]);
         }
 
-        request()->session()->regenerate();
+        session()->regenerate();
 
         $this->redirect(route('dashboard', absolute: false), navigate: true);
     }

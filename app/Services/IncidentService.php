@@ -6,14 +6,12 @@ use App\Exceptions\BusinessRuleException;
 use App\Mail\IncidentAssignedMail;
 use App\Mail\IncidentNeedsValidationMail;
 use App\Mail\NewIncidentNotificationMail;
-
 use App\Models\AuditLog;
 use App\Models\CaseNote;
 use App\Models\Incident;
 use App\Models\MonitorSupervisorAssignment;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
@@ -29,14 +27,14 @@ class IncidentService
         return DB::transaction(function () use ($payload, $photo, $actor, $ipAddress) {
 
             // Province forcée si pas superadmin
-            if (!$actor->hasRole('superadmin')) {
+            if (! $actor->hasRole('superadmin')) {
                 $payload['code_province'] = $actor->code_province;
             }
 
             $payload['statut_incident'] = 'En attente';
             $payload = $this->normalizeNullableReferences($payload);
 
-            $incident = new Incident();
+            $incident = new Incident;
             $incident->fill($payload);
 
             $incident->code_incident = $this->nextIncidentCode();
@@ -91,21 +89,21 @@ class IncidentService
         return DB::transaction(function () use ($incident, $payload, $photo, $actor, $ipAddress) {
 
             if ($this->isLocked($incident) || $incident->statut_incident === 'Validé') {
-                throw new BusinessRuleException("Un incident validé, clôturé ou archivé ne peut plus être modifié.");
+                throw new BusinessRuleException('Un incident validé, clôturé ou archivé ne peut plus être modifié.');
             }
 
             // Moniteur ne peut pas modifier
             if ($actor->hasRole('moniteur')) {
-                throw new BusinessRuleException("Un moniteur ne peut pas modifier un incident.");
+                throw new BusinessRuleException('Un moniteur ne peut pas modifier un incident.');
             }
 
             // Scope province
-            if (!$actor->hasRole('superadmin') && $actor->code_province !== $incident->code_province) {
-                throw new BusinessRuleException("Accès refusé.");
+            if (! $actor->hasRole('superadmin') && $actor->code_province !== $incident->code_province) {
+                throw new BusinessRuleException('Accès refusé.');
             }
 
             // Province forcée si pas superadmin
-            if (!$actor->hasRole('superadmin')) {
+            if (! $actor->hasRole('superadmin')) {
                 $payload['code_province'] = $actor->code_province;
             }
 
@@ -152,29 +150,29 @@ class IncidentService
         return DB::transaction(function () use ($incident, $superviseurId, $actor, $ipAddress, $payload) {
 
             if ($incident->statut_incident !== 'En attente') {
-                throw new BusinessRuleException("Seul un incident en attente peut être assigné.");
+                throw new BusinessRuleException('Seul un incident en attente peut être assigné.');
             }
 
             // Seuls admin/superadmin
-            if (!$actor->hasAnyRole(['superadmin', 'admin'])) {
-                throw new BusinessRuleException("Seul un admin peut assigner.");
+            if (! $actor->hasAnyRole(['superadmin', 'admin'])) {
+                throw new BusinessRuleException('Seul un admin peut assigner.');
             }
 
             // Scope province
-            if (!$actor->hasRole('superadmin') && $actor->code_province !== $incident->code_province) {
-                throw new BusinessRuleException("Accès refusé.");
+            if (! $actor->hasRole('superadmin') && $actor->code_province !== $incident->code_province) {
+                throw new BusinessRuleException('Accès refusé.');
             }
 
             /** @var User|null $superviseur */
             $superviseur = User::query()
                 ->where('id', $superviseurId)
                 ->where('is_active', true)
-                ->whereHas('roles', fn($roleQuery) => $roleQuery->where('slug', 'superviseur'))
+                ->whereHas('roles', fn ($roleQuery) => $roleQuery->where('slug', 'superviseur'))
                 ->where('code_province', $incident->code_province)
                 ->first();
 
-            if (!$superviseur) {
-                throw new BusinessRuleException("Superviseur invalide (inactif / mauvais rôle / mauvaise province).");
+            if (! $superviseur) {
+                throw new BusinessRuleException('Superviseur invalide (inactif / mauvais rôle / mauvaise province).');
             }
 
             $incident->assigned_to = $superviseur->id; // tu as dit uuid -> ok (string)
@@ -214,16 +212,16 @@ class IncidentService
                 ->findOrFail($incident->id);
 
             if ($this->isLocked($incident)) {
-                throw new BusinessRuleException("Incident clôturé/archivé : validation impossible.");
+                throw new BusinessRuleException('Incident clôturé/archivé : validation impossible.');
             }
 
-            if (!$actor->hasAnyRole(['superadmin', 'admin', 'superviseur'])) {
+            if (! $actor->hasAnyRole(['superadmin', 'admin', 'superviseur'])) {
                 throw new BusinessRuleException("Vous n'êtes pas autorisé à valider cet incident.");
             }
 
             // Scope province
-            if (!$actor->hasRole('superadmin') && $actor->code_province !== $incident->code_province) {
-                throw new BusinessRuleException("Accès refusé.");
+            if (! $actor->hasRole('superadmin') && $actor->code_province !== $incident->code_province) {
+                throw new BusinessRuleException('Accès refusé.');
             }
 
             if ($incident->statut_incident === Incident::STATUS_VALIDATED) {
@@ -231,7 +229,7 @@ class IncidentService
             }
 
             if ($incident->statut_incident !== 'En attente') {
-                throw new BusinessRuleException("Seul un incident en attente peut être validé.");
+                throw new BusinessRuleException('Seul un incident en attente peut être validé.');
             }
 
             if ($incident->code_evenement === self::UNQUALIFIED_EVENT_CODE) {
@@ -240,12 +238,12 @@ class IncidentService
 
             $autoAssigned = false;
 
-            if (!$actor->hasRole('superadmin') && $actor->hasRole('superviseur')) {
+            if (! $actor->hasRole('superadmin') && $actor->hasRole('superviseur')) {
                 if ($incident->assigned_to && (string) $incident->assigned_to !== (string) $actor->id) {
-                    throw new BusinessRuleException("Seul le superviseur assigné peut valider cet incident.");
+                    throw new BusinessRuleException('Seul le superviseur assigné peut valider cet incident.');
                 }
 
-                if (!$incident->assigned_to) {
+                if (! $incident->assigned_to) {
                     $incident->assigned_to = $actor->id;
                     $incident->assigned_by = $actor->id;
                     $incident->assigned_at = now();
@@ -300,12 +298,12 @@ class IncidentService
 
             // moniteur ne peut pas archiver
             if ($actor->hasRole('moniteur')) {
-                throw new BusinessRuleException("Un moniteur ne peut pas archiver.");
+                throw new BusinessRuleException('Un moniteur ne peut pas archiver.');
             }
 
             // Scope province
-            if (!$actor->hasRole('superadmin') && $actor->code_province !== $incident->code_province) {
-                throw new BusinessRuleException("Accès refusé.");
+            if (! $actor->hasRole('superadmin') && $actor->code_province !== $incident->code_province) {
+                throw new BusinessRuleException('Accès refusé.');
             }
 
             if ($incident->statut_incident === 'Archivé') {
@@ -313,7 +311,7 @@ class IncidentService
             }
 
             if ($incident->statut_incident === 'Cloturée') {
-                throw new BusinessRuleException("Incident clôturé : archivage non autorisé.");
+                throw new BusinessRuleException('Incident clôturé : archivage non autorisé.');
             }
 
             $incident->statut_incident = 'Archivé';
@@ -339,20 +337,20 @@ class IncidentService
     public function updateCoordinates(Incident $incident, ?float $longitude, ?float $latitude, User $actor, string $ipAddress): Incident
     {
         return DB::transaction(function () use ($incident, $longitude, $latitude, $actor, $ipAddress) {
-            if (!$actor->hasAnyRole(['superadmin', 'admin', 'superviseur'])) {
-                throw new BusinessRuleException("Action non autorisée.");
+            if (! $actor->hasAnyRole(['superadmin', 'admin', 'superviseur'])) {
+                throw new BusinessRuleException('Action non autorisée.');
             }
 
-            if (!$actor->hasRole('superadmin') && $actor->code_province !== $incident->code_province) {
-                throw new BusinessRuleException("Accès refusé.");
+            if (! $actor->hasRole('superadmin') && $actor->code_province !== $incident->code_province) {
+                throw new BusinessRuleException('Accès refusé.');
             }
 
             if ($longitude !== null && ($longitude < -180 || $longitude > 180)) {
-                throw new BusinessRuleException("La longitude doit être comprise entre -180 et 180.");
+                throw new BusinessRuleException('La longitude doit être comprise entre -180 et 180.');
             }
 
             if ($latitude !== null && ($latitude < -90 || $latitude > 90)) {
-                throw new BusinessRuleException("La latitude doit être comprise entre -90 et 90.");
+                throw new BusinessRuleException('La latitude doit être comprise entre -90 et 90.');
             }
 
             $incident->longitude = $longitude;
@@ -378,21 +376,21 @@ class IncidentService
     public function closeIncident(Incident $incident, string $comment, User $actor, string $ipAddress): Incident
     {
         return DB::transaction(function () use ($incident, $comment, $actor, $ipAddress) {
-            if (!$actor->hasAnyRole(['superadmin', 'admin', 'superviseur'])) {
-                throw new BusinessRuleException("Action non autorisée.");
+            if (! $actor->hasAnyRole(['superadmin', 'admin', 'superviseur'])) {
+                throw new BusinessRuleException('Action non autorisée.');
             }
 
-            if (!$actor->hasRole('superadmin') && $actor->code_province !== $incident->code_province) {
-                throw new BusinessRuleException("Accès refusé.");
+            if (! $actor->hasRole('superadmin') && $actor->code_province !== $incident->code_province) {
+                throw new BusinessRuleException('Accès refusé.');
             }
 
             if ($incident->statut_incident !== 'Validé') {
-                throw new BusinessRuleException("Seul un incident validé peut être clôturé.");
+                throw new BusinessRuleException('Seul un incident validé peut être clôturé.');
             }
 
             $comment = trim($comment);
             if (mb_strlen($comment) < 5) {
-                throw new BusinessRuleException("Le commentaire de clôture doit contenir au moins 5 caractères.");
+                throw new BusinessRuleException('Le commentaire de clôture doit contenir au moins 5 caractères.');
             }
 
             $incident->statut_incident = 'Cloturée';
@@ -453,7 +451,7 @@ class IncidentService
 
     private function autoSupervisorFor(User $actor, ?string $codeProvince): ?User
     {
-        if (!$codeProvince || !$actor->hasRole('moniteur')) {
+        if (! $codeProvince || ! $actor->hasRole('moniteur')) {
             return null;
         }
 
@@ -464,7 +462,7 @@ class IncidentService
             ->first();
 
         $supervisor = $assignment?->supervisor;
-        if (!$supervisor || !$supervisor->is_active || $supervisor->code_province !== $codeProvince) {
+        if (! $supervisor || ! $supervisor->is_active || $supervisor->code_province !== $codeProvince) {
             return null;
         }
 
@@ -493,9 +491,9 @@ class IncidentService
             for ($attempt = 0; $attempt < 5; $attempt++) {
                 $row = DB::selectOne("SELECT nextval('incident_code_seq') as n");
                 $n = (int) ($row->n ?? 1);
-                $code = 'ALT-' . str_pad((string) $n, 6, '0', STR_PAD_LEFT);
+                $code = 'ALT-'.str_pad((string) $n, 6, '0', STR_PAD_LEFT);
 
-                if (!Incident::withArchived()->where('code_incident', $code)->exists()) {
+                if (! Incident::withArchived()->where('code_incident', $code)->exists()) {
                     return $code;
                 }
 
@@ -507,21 +505,21 @@ class IncidentService
                 ->count()) + 1;
 
             do {
-                $code = 'ALT-' . str_pad((string) $n, 6, '0', STR_PAD_LEFT);
+                $code = 'ALT-'.str_pad((string) $n, 6, '0', STR_PAD_LEFT);
                 $n++;
             } while (Incident::withArchived()->where('code_incident', $code)->exists());
 
             return $code;
         }
 
-        return 'ALT-' . now()->format('YmdHis');
+        return 'ALT-'.now()->format('YmdHis');
     }
 
     private function ensureIncidentCodeSequence(): void
     {
         $sequence = DB::selectOne("SELECT to_regclass('public.incident_code_seq') as name");
 
-        if (!($sequence->name ?? null)) {
+        if (! ($sequence->name ?? null)) {
             DB::statement('CREATE SEQUENCE IF NOT EXISTS incident_code_seq START WITH 1 INCREMENT BY 1');
             $this->syncIncidentCodeSequence();
         }
@@ -551,14 +549,14 @@ class IncidentService
 
     private function supervisorRoleConstraint($query): void
     {
-        $query->whereHas('roles', fn($roleQuery) => $roleQuery->where('slug', 'superviseur'));
+        $query->whereHas('roles', fn ($roleQuery) => $roleQuery->where('slug', 'superviseur'));
     }
 
     private function notifySuperviseursNeedsValidation(Incident $incident): void
     {
         $superviseurs = User::query()
             ->where('is_active', true)
-            ->where(fn($query) => $this->supervisorRoleConstraint($query))
+            ->where(fn ($query) => $this->supervisorRoleConstraint($query))
             ->where('code_province', $incident->code_province)
             ->get();
 
@@ -575,9 +573,11 @@ class IncidentService
             : '-';
 
         foreach ($superviseurs as $sup) {
-            if (!$sup->email) continue;
+            if (! $sup->email) {
+                continue;
+            }
 
-            Mail::to($sup->email)->send(
+            Mail::to($sup->email)->queue(
                 new IncidentNeedsValidationMail(
                     incident: $incident,
                     userName: $sup->name ?? 'Superviseur',
@@ -591,7 +591,9 @@ class IncidentService
 
     private function notifyAssigned(Incident $incident, User $superviseur, User $assignedBy): void
     {
-        if (!$superviseur->email) return;
+        if (! $superviseur->email) {
+            return;
+        }
 
         $provinceName = DB::table('provinces')->where('code_province', $incident->code_province)->value('nom_province') ?? '-';
         $territoireName = $incident->code_territoire
@@ -603,7 +605,7 @@ class IncidentService
 
         $actionUrl = route('incidents.show', $incident->id);
 
-        Mail::to($superviseur->email)->send(
+        Mail::to($superviseur->email)->queue(
             new IncidentAssignedMail(
                 incident: $incident,
                 superviseurName: $superviseur->name ?? 'Superviseur',
@@ -619,7 +621,7 @@ class IncidentService
     private function notifySupervisorsOfNewIncident(Incident $incident): void
     {
         $supervisors = User::query()
-            ->where(fn($query) => $this->supervisorRoleConstraint($query))
+            ->where(fn ($query) => $this->supervisorRoleConstraint($query))
             ->where('code_province', $incident->code_province)
             ->where('is_active', true)
             ->get();
@@ -633,7 +635,7 @@ class IncidentService
         $reportingOrg = $incident->creator?->organisation?->name ?? 'Indépendante';
 
         foreach ($supervisors as $supervisor) {
-            Mail::to($supervisor->email)->send(new NewIncidentNotificationMail(
+            Mail::to($supervisor->email)->queue(new NewIncidentNotificationMail(
                 $incident,
                 $reportingOrg,
                 $eventType,

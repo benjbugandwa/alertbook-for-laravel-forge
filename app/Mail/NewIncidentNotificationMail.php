@@ -4,12 +4,19 @@ namespace App\Mail;
 
 use App\Models\Incident;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class NewIncidentNotificationMail extends Mailable
+class NewIncidentNotificationMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
+
+    public int $tries = 3;
+
+    public int $timeout = 60;
+
+    public array $backoff = [30, 120, 300];
 
     public function __construct(
         public Incident $incident,

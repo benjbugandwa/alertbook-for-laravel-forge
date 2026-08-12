@@ -4,7 +4,9 @@ namespace App\Livewire\Pages\Documents;
 
 use App\Livewire\Forms\DocumentForm;
 use App\Models\Document;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
@@ -97,11 +99,11 @@ class Index extends Component
 
         if (! $this->editing) {
             $this->validate([
-                'file' => 'required|file|max:20480', // 20MB max
+                'file' => 'required|file|max:20480|mimes:pdf,doc,docx,xls,xlsx,csv,png,jpg,jpeg',
             ]);
         } else {
             $this->validate([
-                'file' => 'nullable|file|max:20480',
+                'file' => 'nullable|file|max:20480|mimes:pdf,doc,docx,xls,xlsx,csv,png,jpg,jpeg',
             ]);
         }
 
@@ -118,11 +120,11 @@ class Index extends Component
             $document->doc_category = $this->form->doc_category;
 
             if ($this->file) {
-                if ($document->file_path && Storage::disk('public')->exists($document->file_path)) {
-                    Storage::disk('public')->delete($document->file_path);
+                if ($document->file_path && $this->disk()->exists($document->file_path)) {
+                    $this->disk()->delete($document->file_path);
                 }
 
-                $path = $this->file->store('documents', 'public');
+                $path = $this->storeDocument();
                 $document->file_path = $path;
                 $document->original_name = $this->file->getClientOriginalName();
                 $document->mime_type = $this->file->getMimeType();
@@ -132,7 +134,7 @@ class Index extends Component
             $document->save();
             $this->dispatch('toast', message: 'Document mis à jour avec succès.', type: 'success');
         } else {
-            $path = $this->file->store('documents', 'public');
+            $path = $this->storeDocument();
 
             Document::create([
                 'doc_name' => $this->form->doc_name,
@@ -155,22 +157,23 @@ class Index extends Component
     {
         $document = Document::findOrFail($id);
 
-        $document->increment('download_count');
-
-        if (! Storage::disk('public')->exists($document->file_path)) {
+        if (! $this->disk()->exists($document->file_path)) {
             $this->dispatch('toast', message: 'Fichier introuvable sur le serveur.', type: 'error');
 
             return;
         }
 
-        return Storage::disk('public')->download($document->file_path, $document->original_name);
+        $document->increment('download_count');
+
+        return $this->disk()->download($document->file_path, basename($document->original_name));
     }
 
     public function shareWhatsapp($id)
     {
         $document = Document::findOrFail($id);
 
-        $url = Storage::disk('public')->url($document->file_path);
+        // Private documents are never exposed through a permanent object URL.
+        $url = route('documents.index');
         $text = 'Document: '.$document->doc_name."\nCatégorie: ".$document->doc_category."\nLien: ".$url;
 
         $waUrl = 'https://wa.me/?text='.urlencode($text);
@@ -199,5 +202,18 @@ class Index extends Component
             'documents' => $documents,
             'categories' => $this->categories(),
         ]);
+    }
+
+    private function disk(): FilesystemAdapter
+    {
+        return Storage::disk(config('filesystems.documents'));
+    }
+
+    private function storeDocument(): string
+    {
+        $extension = strtolower((string) $this->file->getClientOriginalExtension());
+        $filename = Str::uuid().($extension !== '' ? ".{$extension}" : '');
+
+        return $this->file->storeAs('documents', $filename, config('filesystems.documents'));
     }
 }

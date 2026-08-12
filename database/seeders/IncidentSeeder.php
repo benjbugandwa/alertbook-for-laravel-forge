@@ -48,6 +48,7 @@ class IncidentSeeder extends Seeder
         $users = User::pluck('id')->toArray();
         if (empty($users)) {
             $this->command->warn('Aucun utilisateur trouvé. Seeder annulé.');
+
             return;
         }
 
@@ -55,7 +56,7 @@ class IncidentSeeder extends Seeder
 
             Incident::create([
                 'id' => Str::uuid(),
-                'code_incident' => 'INC-' . now()->format('Ymd') . '-' . Str::upper(Str::random(6)),
+                'code_incident' => 'INC-'.now()->format('Ymd').'-'.Str::upper(Str::random(6)),
 
                 'date_incident' => now()->subDays(rand(0, 120)),
                 'created_by' => $users[array_rand($users)],
@@ -68,7 +69,7 @@ class IncidentSeeder extends Seeder
                 'code_territoire' => $territoires[array_rand($territoires)],
                 'code_zonesante' => $zones[array_rand($zones)],
 
-                'localite' => 'Localité ' . rand(1, 20),
+                'localite' => 'Localité '.rand(1, 20),
                 'source_info' => 'Signalement communautaire',
                 'description_faits' => 'Description aléatoire de test pour dashboard.',
 

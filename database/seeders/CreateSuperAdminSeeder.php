@@ -11,11 +11,21 @@ class CreateSuperAdminSeeder extends Seeder
 {
     public function run(): void
     {
+        $name = config('alertbook.bootstrap_admin.name');
+        $email = config('alertbook.bootstrap_admin.email');
+        $password = config('alertbook.bootstrap_admin.password');
+
+        if (! $name || ! $email || ! $password) {
+            $this->command?->warn('Superadmin non créé : variables ALERTBOOK_BOOTSTRAP_ADMIN_* absentes.');
+
+            return;
+        }
+
         $user = User::updateOrCreate(
-            ['email' => 'benjaminbugandwa@gmail.com'],
+            ['email' => $email],
             [
-                'name' => 'Benjamin Bugandwa',
-                'password' => Hash::make('Password123!'),
+                'name' => $name,
+                'password' => Hash::make($password),
                 'is_active' => true,
                 // 'code_province' => 'PROV01',
                 'code_province' => null,

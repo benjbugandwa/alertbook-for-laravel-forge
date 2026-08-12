@@ -11,8 +11,13 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 class Province extends Model
 {
     protected $table = 'provinces';
+
     protected $primaryKey = 'code_province';
+
     public $incrementing = false;
+
+    public $timestamps = false;
+
     protected $keyType = 'string';
 
     protected $fillable = ['code_province', 'nom_province', 'is_active'];

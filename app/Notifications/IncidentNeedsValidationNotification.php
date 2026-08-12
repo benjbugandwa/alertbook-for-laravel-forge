@@ -7,9 +7,15 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class IncidentNeedsValidationNotification extends Notification
+class IncidentNeedsValidationNotification extends Notification implements ShouldQueue
 {
     use Queueable;
+
+    public int $tries = 3;
+
+    public int $timeout = 60;
+
+    public array $backoff = [30, 120, 300];
 
     /**
      * Create a new notification instance.

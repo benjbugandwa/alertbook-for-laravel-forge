@@ -1,13 +1,13 @@
 <?php
 
-use App\Http\Controllers\DocumentationVideoController;
 use App\Http\Controllers\AnalysisReportController;
+use App\Http\Controllers\DocumentationVideoController;
 use App\Http\Controllers\IncidentBriefingController;
 use App\Http\Controllers\IncidentExportController;
 use App\Http\Controllers\IncidentPrintController;
 use App\Http\Controllers\MovementPrintController;
-use App\Livewire\Pages\Dashboard;
 use App\Livewire\Pages\Analyses\Index as AnalysesIndex;
+use App\Livewire\Pages\Dashboard;
 use App\Livewire\Pages\Documents\Index as DocumentsIndex;
 use App\Livewire\Pages\Exports\Index as ExportsIndex;
 use App\Livewire\Pages\Incidents\Index as IncidentsIndex;
@@ -20,7 +20,6 @@ use App\Livewire\Pages\Survivants\Index as SurvivantsIndex;
 use App\Livewire\Pages\Users\Index as UsersIndex;
 use App\Livewire\Pages\Users\Profile;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 // Route::view('/', 'welcome');
@@ -39,22 +38,17 @@ Route::get('/a-propos-nous', function () {
     return view('about_us');
 })->name('about_us');
 
-Route::get('/aide/videos', [DocumentationVideoController::class, 'index'])
-    ->name('documentation.videos');
-Route::get('/aide/videos/{video}/offline', [DocumentationVideoController::class, 'offline'])
-    ->name('documentation.videos.offline');
-Route::get('/aide/videos/{video}', [DocumentationVideoController::class, 'stream'])
-    ->name('documentation.videos.stream');
-
-Route::get('/phpinfo', function () {
-    phpinfo();
-});
-
 /*Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])
     ->name('dashboard');*/
 
 Route::middleware(['auth', 'active'])->group(function () {
+    Route::get('/aide/videos', [DocumentationVideoController::class, 'index'])
+        ->name('documentation.videos');
+    Route::get('/aide/videos/{video}/offline', [DocumentationVideoController::class, 'offline'])
+        ->name('documentation.videos.offline');
+    Route::get('/aide/videos/{video}', [DocumentationVideoController::class, 'stream'])
+        ->name('documentation.videos.stream');
     Route::get('/dashboard', Dashboard::class)->name('dashboard');
     Route::get('/organisations', OrganisationsIndex::class)->name('organisations.index');
     Route::get('/documents', DocumentsIndex::class)->name('documents.index');
@@ -101,16 +95,6 @@ Route::middleware(['auth', 'active'])->group(function () {
 });*/
 
 // Temporaire pour tester les rôles et permissions
-Route::middleware(['auth', 'active'])->get('/whoami', function () {
-    $u = Auth::user();
-
-    return [
-        'email' => $u->email,
-        'province' => $u->code_province,
-        'roles' => $u->roles->pluck('slug'),
-    ];
-});
-
 Route::middleware(['auth', 'active', 'role:superadmin'])->group(function () {
     Route::get('/users', UsersIndex::class)->name('users.index');
     Route::get('/auteurs', \App\Livewire\Pages\Auteurs\Index::class)->name('auteurs.index');
@@ -149,6 +133,6 @@ Route::post('/logout', function (Request $request) {
     $request->session()->regenerateToken();
 
     return redirect()->route('landing');
-})->name('logout');
+})->middleware('auth')->name('logout');
 
 require __DIR__.'/auth.php';
