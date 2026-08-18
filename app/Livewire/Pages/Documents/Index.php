@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
+use Throwable;
 
 class Index extends Component
 {
@@ -120,33 +121,48 @@ class Index extends Component
             $document->doc_category = $this->form->doc_category;
 
             if ($this->file) {
-                if ($document->file_path && $this->disk()->exists($document->file_path)) {
-                    $this->disk()->delete($document->file_path);
-                }
-
-                $path = $this->storeDocument();
-                $document->file_path = $path;
+                $oldPath = $document->file_path;
+                $newPath = $this->storeDocument();
+                $document->file_path = $newPath;
                 $document->original_name = $this->file->getClientOriginalName();
                 $document->mime_type = $this->file->getMimeType();
                 $document->file_type = $this->file->getClientOriginalExtension();
-            }
 
-            $document->save();
+                try {
+                    $document->save();
+                } catch (Throwable $exception) {
+                    $this->disk()->delete($newPath);
+
+                    throw $exception;
+                }
+
+                if ($oldPath && $oldPath !== $newPath) {
+                    $this->disk()->delete($oldPath);
+                }
+            } else {
+                $document->save();
+            }
             $this->dispatch('toast', message: 'Document mis à jour avec succès.', type: 'success');
         } else {
             $path = $this->storeDocument();
 
-            Document::create([
-                'doc_name' => $this->form->doc_name,
-                'doc_summary' => $this->form->doc_summary,
-                'doc_category' => $this->form->doc_category,
-                'file_path' => $path,
-                'mime_type' => $this->file->getMimeType(),
-                'original_name' => $this->file->getClientOriginalName(),
-                'file_type' => $this->file->getClientOriginalExtension(),
-                'uploaded_by' => auth()->id(),
-                'download_count' => 0,
-            ]);
+            try {
+                Document::create([
+                    'doc_name' => $this->form->doc_name,
+                    'doc_summary' => $this->form->doc_summary,
+                    'doc_category' => $this->form->doc_category,
+                    'file_path' => $path,
+                    'mime_type' => $this->file->getMimeType(),
+                    'original_name' => $this->file->getClientOriginalName(),
+                    'file_type' => $this->file->getClientOriginalExtension(),
+                    'uploaded_by' => auth()->id(),
+                    'download_count' => 0,
+                ]);
+            } catch (Throwable $exception) {
+                $this->disk()->delete($path);
+
+                throw $exception;
+            }
             $this->dispatch('toast', message: 'Document ajouté avec succès.', type: 'success');
         }
 
@@ -178,6 +194,30 @@ class Index extends Component
 
         $waUrl = 'https://wa.me/?text='.urlencode($text);
         $this->dispatch('open-url', url: $waUrl);
+    }
+
+    public function delete(string $id): void
+    {
+        if (! $this->canEditOrAdd()) {
+            $this->dispatch('toast', message: 'Action non autorisée', type: 'error');
+
+            return;
+        }
+
+        $document = Document::findOrFail($id);
+
+        if ($document->uploaded_by !== auth()->id()) {
+            $this->dispatch('toast', message: 'Seul le créateur peut supprimer ce document.', type: 'error');
+
+            return;
+        }
+
+        if ($document->file_path && $this->disk()->exists($document->file_path)) {
+            $this->disk()->delete($document->file_path);
+        }
+
+        $document->delete();
+        $this->dispatch('toast', message: 'Document supprimé avec succès.', type: 'success');
     }
 
     public function render()
