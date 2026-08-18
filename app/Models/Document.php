@@ -2,9 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Document extends Model
@@ -12,7 +11,13 @@ class Document extends Model
     use HasUuids;
 
     protected $keyType = 'string';
+
     public $incrementing = false;
+
+    protected $casts = [
+        'uploaded_by' => 'integer',
+        'download_count' => 'integer',
+    ];
 
     protected $fillable = [
         'id',

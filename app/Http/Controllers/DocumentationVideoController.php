@@ -31,16 +31,16 @@ class DocumentationVideoController extends Controller
     public function stream(Request $request, string $video): Response
     {
         $item = collect($this->videos())->firstWhere('key', $video);
-        abort_if(!$item, 404);
+        abort_if(! $item, 404);
 
         if ($this->driver() === 's3') {
-            return redirect()->away($item['url']);
+            return redirect()->away($this->temporaryUrl($item['path']));
         }
 
         return response()
             ->file($item['path'], [
                 'Content-Type' => File::mimeType($item['path']) ?: 'video/mp4',
-                'Content-Disposition' => 'inline; filename="' . addslashes($item['filename']) . '"',
+                'Content-Disposition' => 'inline; filename="'.addslashes($item['filename']).'"',
                 'Accept-Ranges' => 'bytes',
                 'Cache-Control' => 'public, max-age=3600',
             ]);
@@ -49,7 +49,7 @@ class DocumentationVideoController extends Controller
     public function offline(Request $request, string $video): Response
     {
         $item = collect($this->videos())->firstWhere('key', $video);
-        abort_if(!$item, 404);
+        abort_if(! $item, 404);
 
         if ($this->driver() === 's3') {
             return $this->streamS3File($item);
@@ -58,7 +58,7 @@ class DocumentationVideoController extends Controller
         return response()
             ->file($item['path'], [
                 'Content-Type' => File::mimeType($item['path']) ?: 'video/mp4',
-                'Content-Disposition' => 'inline; filename="' . addslashes($item['filename']) . '"',
+                'Content-Disposition' => 'inline; filename="'.addslashes($item['filename']).'"',
                 'Cache-Control' => 'public, max-age=31536000',
             ]);
     }
@@ -74,13 +74,13 @@ class DocumentationVideoController extends Controller
     {
         $directory = $this->documentationPath();
 
-        if (!File::isDirectory($directory)) {
+        if (! File::isDirectory($directory)) {
             return [];
         }
 
         return collect(File::files($directory))
-            ->filter(fn($file) => in_array(Str::lower($file->getExtension()), self::EXTENSIONS, true))
-            ->sortBy(fn($file) => $this->sortKey($file->getFilename()))
+            ->filter(fn ($file) => in_array(Str::lower($file->getExtension()), self::EXTENSIONS, true))
+            ->sortBy(fn ($file) => $this->sortKey($file->getFilename()))
             ->values()
             ->map(function ($file, int $index) {
                 $filename = $file->getFilename();
@@ -110,7 +110,7 @@ class DocumentationVideoController extends Controller
             $disk = Storage::disk($this->diskName());
 
             return collect($this->s3VideoPaths($disk))
-                ->sortBy(fn(string $path) => $this->sortKey(basename($path)))
+                ->sortBy(fn (string $path) => $this->sortKey(basename($path)))
                 ->values()
                 ->map(function (string $path, int $index) use ($disk) {
                     $filename = basename($path);
@@ -127,7 +127,7 @@ class DocumentationVideoController extends Controller
                         'title' => $this->titleFor($basename),
                         'description' => $description,
                         'path' => $path,
-                        'url' => $this->temporaryUrl($path),
+                        'url' => route('documentation.videos.stream', $key),
                         'offline_url' => route('documentation.videos.offline', $key),
                         'size' => $this->formatBytes($size),
                         'updated_at' => $lastModified ? date('d/m/Y H:i', $lastModified) : 'N/A',
@@ -148,6 +148,7 @@ class DocumentationVideoController extends Controller
 
             try {
                 Storage::disk($this->diskName())->allFiles($this->prefix());
+
                 return true;
             } catch (\Throwable) {
                 return false;
@@ -166,11 +167,12 @@ class DocumentationVideoController extends Controller
         }
 
         if ($missing = $this->missingS3Config()) {
-            return 'Configuration S3 incomplete : ' . implode(', ', $missing) . '.';
+            return 'Configuration S3 incomplete : '.implode(', ', $missing).'.';
         }
 
         try {
             Storage::disk($this->diskName())->allFiles($this->prefix());
+
             return null;
         } catch (\Throwable $exception) {
             return $this->friendlyS3Error($exception);
@@ -179,7 +181,7 @@ class DocumentationVideoController extends Controller
 
     private function missingS3Config(): array
     {
-        $diskConfig = config('filesystems.disks.' . $this->diskName(), []);
+        $diskConfig = config('filesystems.disks.'.$this->diskName(), []);
 
         return collect([
             'bucket' => $diskConfig['bucket'] ?? null,
@@ -187,7 +189,7 @@ class DocumentationVideoController extends Controller
             'access key' => $diskConfig['key'] ?? null,
             'secret key' => $diskConfig['secret'] ?? null,
             'region' => $diskConfig['region'] ?? null,
-        ])->filter(fn($value) => blank($value))->keys()->all();
+        ])->filter(fn ($value) => blank($value))->keys()->all();
     }
 
     private function driver(): string
@@ -233,10 +235,10 @@ class DocumentationVideoController extends Controller
     private function sourceLabel(): string
     {
         if ($this->driver() === 's3') {
-            $bucket = config('filesystems.disks.' . $this->diskName() . '.bucket') ?: 'bucket non configure';
+            $bucket = config('filesystems.disks.'.$this->diskName().'.bucket') ?: 'bucket non configure';
             $prefix = $this->prefix() ?: 'racine du bucket';
 
-            return $this->diskName() . ':' . $bucket . '/' . $prefix;
+            return $this->diskName().':'.$bucket.'/'.$prefix;
         }
 
         return $this->documentationPath();
@@ -262,7 +264,7 @@ class DocumentationVideoController extends Controller
             return 'Erreur SSL avec l endpoint S3. Verifiez le style d URL indique dans les credentials Railway.';
         }
 
-        return 'Erreur S3 : ' . Str::limit($message, 220);
+        return 'Erreur S3 : '.Str::limit($message, 220);
     }
 
     private function streamS3File(array $item): StreamedResponse
@@ -272,7 +274,7 @@ class DocumentationVideoController extends Controller
         abort_if($stream === false, 404);
         $headers = [
             'Content-Type' => $this->mimeTypeFor($item['filename']),
-            'Content-Disposition' => 'inline; filename="' . addslashes($item['filename']) . '"',
+            'Content-Disposition' => 'inline; filename="'.addslashes($item['filename']).'"',
             'Cache-Control' => 'public, max-age=31536000',
         ];
         $size = $this->safeSize($disk, $item['path']);
@@ -302,7 +304,7 @@ class DocumentationVideoController extends Controller
     private function descriptionFor(string $directory, string $basename): ?string
     {
         foreach (['txt', 'md'] as $extension) {
-            $path = $directory . DIRECTORY_SEPARATOR . $basename . '.' . $extension;
+            $path = $directory.DIRECTORY_SEPARATOR.$basename.'.'.$extension;
 
             if (File::isFile($path)) {
                 return trim((string) File::get($path)) ?: null;
@@ -317,7 +319,7 @@ class DocumentationVideoController extends Controller
         $directory = trim($directory, '. /');
 
         foreach (['txt', 'md'] as $extension) {
-            $path = ltrim($directory . '/' . $basename . '.' . $extension, '/');
+            $path = ltrim($directory.'/'.$basename.'.'.$extension, '/');
 
             try {
                 $disk = Storage::disk($this->diskName());
@@ -344,11 +346,11 @@ class DocumentationVideoController extends Controller
         foreach ($prefixes as $prefix) {
             try {
                 $paths = collect($disk->allFiles($prefix))
-                    ->filter(fn(string $path) => in_array(Str::lower(pathinfo($path, PATHINFO_EXTENSION)), self::EXTENSIONS, true))
+                    ->filter(fn (string $path) => in_array(Str::lower(pathinfo($path, PATHINFO_EXTENSION)), self::EXTENSIONS, true))
                     ->values()
                     ->all();
 
-                if (!empty($paths)) {
+                if (! empty($paths)) {
                     return $paths;
                 }
             } catch (\Throwable) {
@@ -378,19 +380,19 @@ class DocumentationVideoController extends Controller
     private function sortKey(string $filename): string
     {
         if (preg_match('/video[_\s-]*(\d+)/i', $filename, $matches)) {
-            return str_pad($matches[1], 4, '0', STR_PAD_LEFT) . '_' . $filename;
+            return str_pad($matches[1], 4, '0', STR_PAD_LEFT).'_'.$filename;
         }
 
-        return '9999_' . $filename;
+        return '9999_'.$filename;
     }
 
     private function formatBytes(int $bytes): string
     {
         if ($bytes >= 1024 * 1024 * 1024) {
-            return round($bytes / (1024 * 1024 * 1024), 1) . ' Go';
+            return round($bytes / (1024 * 1024 * 1024), 1).' Go';
         }
 
-        return round($bytes / (1024 * 1024), 1) . ' Mo';
+        return round($bytes / (1024 * 1024), 1).' Mo';
     }
 
     private function safeSize($disk, string $path): int
