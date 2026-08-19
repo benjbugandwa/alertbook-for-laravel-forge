@@ -9,6 +9,7 @@
 7. Configurer les DNS A/CNAME, puis demander Let's Encrypt dans Forge.
 8. Charger les variables décrites dans `ENVIRONMENT_VARIABLES.md`; générer `APP_KEY` une seule fois et la sauvegarder en lieu sûr.
 9. Installer/activer les extensions PHP : pgsql/pdo_pgsql, mbstring, xml, curl, zip, gd, fileinfo, bcmath et redis si utilisé.
+   Pour les documents de 20 Mo, régler PHP avec `upload_max_filesize=20M` et `post_max_size=25M`, puis ajouter `client_max_body_size 25M;` à la configuration Nginx du site et recharger PHP-FPM/Nginx depuis Forge.
 10. Configurer le script de `PRODUCTION_DEPLOYMENT.md` avec le chemin réel du site.
 11. Ajouter le daemon queue avec auto-restart : `php artisan queue:work redis --sleep=3 --tries=3 --timeout=90 --max-time=3600`.
 12. Ajouter le Scheduler Forge chaque minute : `php artisan schedule:run`.
@@ -17,4 +18,3 @@
 15. Exécuter intégralement `POST_DEPLOYMENT_CHECKLIST.md`.
 
 PostgreSQL et Redis managés doivent utiliser le réseau privé/VPC et une liste d'adresses autorisées limitée aux serveurs Laravel. Pour un Droplet unique, les lier à localhost est préférable.
-

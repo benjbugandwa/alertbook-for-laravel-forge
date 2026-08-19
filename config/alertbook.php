@@ -17,4 +17,8 @@ return [
         'prefix' => trim((string) env('ALERTBOOK_DOCUMENTATION_PREFIX', 'documentation/videos'), '/'),
         'temporary_url_ttl' => (int) env('ALERTBOOK_DOCUMENTATION_URL_TTL', 3600),
     ],
+
+    'documents' => [
+        'max_upload_kb' => max(1, (int) env('ALERTBOOK_DOCUMENT_MAX_UPLOAD_KB', 20480)),
+    ],
 ];

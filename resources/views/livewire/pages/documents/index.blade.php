@@ -159,7 +159,9 @@
                     <div class="space-y-1">
                         <label class="text-sm font-medium text-gray-700">Fichier {{ $editing ? '(laisser vide pour conserver l\'actuel)' : '*' }}</label>
                         <input type="file" wire:model="file" class="block w-full text-sm rounded-lg border border-gray-200 p-2" />
-                        <div class="text-xs text-gray-500 mt-1">Taille max: 20 Mo.</div>
+                        <div class="text-xs text-gray-500 mt-1">
+                            Taille max: {{ (int) ceil(config('alertbook.documents.max_upload_kb', 20480) / 1024) }} Mo.
+                        </div>
                         @error('file')
                             <div class="text-sm text-red-600">{{ $message }}</div>
                         @enderror

@@ -1,5 +1,7 @@
 <?php
 
+$documentMaxUploadKb = max(1, (int) env('ALERTBOOK_DOCUMENT_MAX_UPLOAD_KB', 20480));
+
 return [
 
     /*
@@ -71,9 +73,9 @@ return [
         // Global temporary rules:
         // - images
         // - pdf
-        // - word
-        // - max 10 MB
-        'rules' => 'file|mimes:png,jpg,jpeg,pdf,doc,docx|max:10240',
+        // - office documents
+        // - same maximum as the Documents module
+        'rules' => "file|mimes:png,jpg,jpeg,pdf,doc,docx,xls,xlsx,csv|max:{$documentMaxUploadKb}",
 
         'middleware' => 'throttle:60,1',
 
