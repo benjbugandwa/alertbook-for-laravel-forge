@@ -34,6 +34,8 @@ class ProductionReadinessTest extends TestCase
         $this->assertSame('resend', config('mail.mailers.resend.transport'));
         $this->assertArrayHasKey('documents', config('filesystems'));
         $this->assertArrayHasKey('pgsql', config('database.connections'));
+        $this->assertSame(20480, config('alertbook.documents.max_upload_kb'));
+        $this->assertStringContainsString('max:20480', config('livewire.temporary_file_upload.rules'));
     }
 
     public function test_non_critical_mail_is_queueable(): void

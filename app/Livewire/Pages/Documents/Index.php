@@ -98,13 +98,16 @@ class Index extends Component
 
         $this->form->validate();
 
+        $maxUploadKb = (int) config('alertbook.documents.max_upload_kb', 20480);
+        $fileRules = "file|max:{$maxUploadKb}|mimes:pdf,doc,docx,xls,xlsx,csv,png,jpg,jpeg";
+
         if (! $this->editing) {
             $this->validate([
-                'file' => 'required|file|max:20480|mimes:pdf,doc,docx,xls,xlsx,csv,png,jpg,jpeg',
+                'file' => "required|{$fileRules}",
             ]);
         } else {
             $this->validate([
-                'file' => 'nullable|file|max:20480|mimes:pdf,doc,docx,xls,xlsx,csv,png,jpg,jpeg',
+                'file' => "nullable|{$fileRules}",
             ]);
         }
 

@@ -29,7 +29,7 @@ class DocumentsCrudTest extends TestCase
             ->test(DocumentsIndex::class)
             ->set('form.doc_name', 'Rapport initial')
             ->set('form.doc_category', 'Rapport')
-            ->set('file', UploadedFile::fake()->create('rapport.pdf', 10, 'application/pdf'))
+            ->set('file', UploadedFile::fake()->create('rapport.pdf', 12 * 1024, 'application/pdf'))
             ->call('save')
             ->assertHasNoErrors();
 
