@@ -6,7 +6,7 @@ cd /app
 echo "==> Booting AlertBook for Production on Railway…"
 
 # 1) Ensure storage directories exist (crucial if a Volume is mounted empty)
-mkdir -p storage/app/livewire-tmp
+mkdir -p storage/app/private/livewire-tmp
 mkdir -p storage/app/public/incidents
 mkdir -p storage/app/public/case-notes
 mkdir -p storage/app/public/referencements

@@ -38,6 +38,22 @@ class ProductionReadinessTest extends TestCase
         $this->assertStringContainsString('max:20480', config('livewire.temporary_file_upload.rules'));
     }
 
+    public function test_livewire_temporary_upload_directory_matches_the_local_disk_root(): void
+    {
+        $temporaryUploadPath = config('filesystems.disks.local.root')
+            .DIRECTORY_SEPARATOR
+            .config('livewire.temporary_file_upload.directory');
+
+        $this->assertSame(
+            str_replace('/', DIRECTORY_SEPARATOR, storage_path('app/private/livewire-tmp')),
+            str_replace('/', DIRECTORY_SEPARATOR, $temporaryUploadPath)
+        );
+        $this->assertStringContainsString(
+            'storage/app/private/livewire-tmp',
+            file_get_contents(base_path('forge/deploy.sh'))
+        );
+    }
+
     public function test_non_critical_mail_is_queueable(): void
     {
         $this->assertContains(ShouldQueue::class, class_implements(IncidentAssignedMail::class));

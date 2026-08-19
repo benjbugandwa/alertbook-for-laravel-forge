@@ -57,7 +57,7 @@
         ],
         "deploy": [
             "@php artisan migrate --force",
-            "@php -r \"is_dir('storage/app/livewire-tmp') || mkdir('storage/app/livewire-tmp', 0755, true);\"",
+            "@php -r \"is_dir('storage/app/private/livewire-tmp') || mkdir('storage/app/private/livewire-tmp', 0755, true);\"",
             "@php artisan config:cache",
             "@php artisan route:cache",
             "@php artisan view:cache",

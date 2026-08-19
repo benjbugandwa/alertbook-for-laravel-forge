@@ -22,7 +22,7 @@ echo "==> Installing Node dependencies and building assets"
 
 echo "==> Preparing Laravel storage directories"
 mkdir -p \
-    storage/app/livewire-tmp \
+    storage/app/private/livewire-tmp \
     storage/app/public/incidents \
     storage/app/public/case-notes \
     storage/app/public/referencements \
