@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Exports\IncidentsWorkbookExport;
+use App\Exports\EmptyIncidentsWorkbookExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -37,24 +37,10 @@ class IncidentExportController extends Controller
             $data['province'] ?? null,
         );
 
-        $includeNotes = (bool) ((int) ($data['include_notes'] ?? 0));
-        $includeRefs = (bool) ((int) ($data['include_referencements'] ?? 0));
-        $includeViolences = (bool) ((int) ($data['include_violences'] ?? 1));
-        $includeVictimes = (bool) ((int) ($data['include_victimes'] ?? 1));
-        $includeReponses = (bool) ((int) ($data['include_reponses'] ?? 1));
-
-        $export = new IncidentsWorkbookExport(
-            from: $data['from'],
-            to: $data['to'],
-            province: $data['province'] ?? null,
-            includeSurvivantName: $user->hasRole('superadmin'),
-            includeNotes: $includeNotes,
-            includeReferencements: $includeRefs,
-            includeViolences: $includeViolences,
-            territoire: $data['territoire'] ?? null,
-            includeVictimes: $includeVictimes,
-            includeReponses: $includeReponses,
-        );
+        // The incident data export is intentionally suspended. Keep the
+        // validation and download workflow intact, but return a blank workbook.
+        // Restore IncidentsWorkbookExport here when the suspension is lifted.
+        $export = new EmptyIncidentsWorkbookExport;
 
         $filename = 'Export-alertes-'.$data['from'].'_au_'.$data['to'].'.xlsx';
 
