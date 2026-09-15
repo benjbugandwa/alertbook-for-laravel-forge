@@ -567,11 +567,16 @@
                         scrollWheelZoom: true,
                     }).setView([-4.0383, 21.7587], 5);
 
-                    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
-                        subdomains: 'abcd',
-                        maxZoom: 20,
-                    }).addTo(this.map);
+                    const cartoBasemapApiKey = @js(config('services.carto.basemap_api_key'));
+
+                    L.tileLayer(
+                        `https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png?key=${encodeURIComponent(cartoBasemapApiKey)}`,
+                        {
+                            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                            subdomains: 'abcd',
+                            maxZoom: 20,
+                        }
+                    ).addTo(this.map);
 
                     this.bubblesLayer = L.layerGroup().addTo(this.map);
 
